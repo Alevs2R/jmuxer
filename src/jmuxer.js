@@ -64,6 +64,11 @@ export default class JMuxmer extends Event {
         this.remuxController.on('buffer', this.onBuffer.bind(this));
         this.remuxController.on('ready', this.createBuffer.bind(this));
         this.startInterval();
+
+        // since we are streaming realtime, always seek to the latest time after pause
+        this.node.addEventListener('play', (event) => {
+            this.node.currentTime = this.remuxController.tracks['video'].dts / 1000;
+        });
     }
 
     setupMSE() {
@@ -228,7 +233,6 @@ export default class JMuxmer extends Event {
     startInterval() {
         this.interval = setInterval(()=>{
             if (this.bufferControllers) {
-                this.releaseBuffer();
                 this.clearBuffer();
             }
         }, this.options.flushingTime);
@@ -280,6 +284,7 @@ export default class JMuxmer extends Event {
         if (this.bufferControllers && this.bufferControllers[data.type]) {
             this.bufferControllers[data.type].feed(data.payload);
         }
+        this.releaseBuffer();
     }
 
     /* Events on MSE */
